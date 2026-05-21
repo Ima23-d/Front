@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fila de Prioridade - LifeAI</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&family=SF+Pro+Text:wght@400;500;600&family=SF+Pro+Rounded:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- CSS Principal -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo-paginas.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo-utilitarios.css') }}">
+</head>
+<body class="pagina-aplicacao">
+    <!-- Barra Lateral -->
+    {% include 'partials/barra_lateral.html' %}
+
+    <div class="area-conteudo">
+        <!-- Barra Superior -->
+        {% include 'partials/barra_superior.html' %}
+
+        <!-- Conteúdo Principal -->
+        <main class="conteudo-principal">
+            <!-- Título da Página -->
+            <section class="secao-titulo">
+                <h1 class="titulo-pagina">Fila de Prioridade</h1>
+                <p class="descricao-pagina">Reorganização inteligente da fila hospitalar conforme urgência</p>
+            </section>
+
+            <!-- Estatísticas da Fila -->
+            <section class="secao-stats-fila">
+                <div class="grade-stats-fila">
+                    <div class="card-stat-fila card-critica">
+                        <span class="label-stat-fila">Críticos</span>
+                        <div class="numero-stat-fila">{{ exames_fila|selectattr('resultado.prioridade','equalto','CRÍTICO')|list|length }}</div>
+                    </div>
+                    <div class="card-stat-fila card-urgente">
+                        <span class="label-stat-fila">Urgentes</span>
+                        <div class="numero-stat-fila">{{ exames_fila|selectattr('resultado.prioridade','equalto','URGENTE')|list|length }}</div>
+                    </div>
+                    <div class="card-stat-fila card-atencao">
+                        <span class="label-stat-fila">Atenção</span>
+                        <div class="numero-stat-fila">{{ exames_fila|selectattr('resultado.prioridade','equalto','ATENÇÃO')|list|length }}</div>
+                    </div>
+                    <div class="card-stat-fila card-normal">
+                        <span class="label-stat-fila">Normais</span>
+                        <div class="numero-stat-fila">{{ exames_fila|selectattr('resultado.prioridade','equalto','NORMAL')|list|length }}</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Fila de Pacientes -->
+            <section class="secao-fila">
+                <div class="container-fila">
+                    {% if exames_fila %}
+                        {% for exame in exames_fila %}
+                        <div class="card-fila card-fila-{{ exame.resultado.prioridade|lower }} {% if exame.resultado.prioridade == 'CRÍTICO' %}card-fila-pulsante{% endif %}">
+                            <div class="cabecalho-card-fila">
+                                <div class="indicador-prioridade-fila {% if exame.resultado.prioridade == 'CRÍTICO' %}indicador-critico{% elif exame.resultado.prioridade == 'URGENTE' %}indicador-urgente{% elif exame.resultado.prioridade == 'ATENÇÃO' %}indicador-atencao{% else %}indicador-normal{% endif %}">
+                                    <span class="numero-ordem">{{ loop.index }}</span>
+                                </div>
+                                
+                                <div class="info-basica-fila">
+                                    <h3 class="nome-paciente-fila">{{ exame.nome_paciente }}</h3>
+                                    <p class="cpf-paciente-fila">CPF: {{ exame.cpf }}</p>
+                                </div>
+
+                                <div class="badge-prioridade-fila {% if exame.resultado.prioridade == 'CRÍTICO' %}badge-critica{% elif exame.resultado.prioridade == 'URGENTE' %}badge-urgente{% elif exame.resultado.prioridade == 'ATENÇÃO' %}badge-atencao{% else %}badge-normal{% endif %}">
+                                    {{ exame.resultado.prioridade }}
+                                </div>
+                            </div>
+
+                            <div class="corpo-card-fila">
+                                <div class="linha-info-fila">
+                                    <span class="rotulo-info-fila">Data de Nascimento:</span>
+                                    <span class="valor-info-fila">{{ exame.data_nascimento }}</span>
+                                </div>
+
+                                <div class="linha-info-fila">
+                                    <span class="rotulo-info-fila">Sexo:</span>
+                                    <span class="valor-info-fila">{{ exame.sexo|title }}</span>
+                                </div>
+
+                                <div class="linha-info-fila">
+                                    <span class="rotulo-info-fila">Hospital:</span>
+                                    <span class="valor-info-fila">{{ exame.hospital }}</span>
+                                </div>
+
+                                <div class="linha-info-fila">
+                                    <span class="rotulo-info-fila">Data de Registro:</span>
+                                    <span class="valor-info-fila">{{ exame.data_registro }}</span>
+                                </div>
+
+                                <div class="linha-info-fila">
+                                    <span class="rotulo-info-fila">Nível de Risco:</span>
+                                    <div class="indicador-risco-fila">
+                                        <div class="barra-risco-fila">
+                                            <div class="preenchimento-risco-fila" style="width: {{ exame.resultado.percentual_risco }}%"></div>
+                                        </div>
+                                        <span class="percentual-risco-fila">{{ exame.resultado.percentual_risco }}%</span>
+                                    </div>
+                                </div>
+
+                                <div class="linha-info-fila">
+                                    <span class="rotulo-info-fila">Gravidade:</span>
+                                    <span class="valor-info-fila">{{ exame.resultado.gravidade }}</span>
+                                </div>
+
+                                <div class="linha-info-fila">
+                                    <span class="rotulo-info-fila">Tempo de Espera:</span>
+                                    <span class="tempo-espera-fila">{{ (range(5, 60)|random) }} minutos</span>
+                                </div>
+                            </div>
+
+                            <div class="rodape-card-fila">
+                                <button type="button" class="botao botao-pequeno botao-secundario" title="Visualizar detalhes">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                </button>
+                                <button type="button" class="botao botao-pequeno botao-primario" title="Iniciar atendimento">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="mensagem-vazia-fila">
+                        <svg class="icone-vazio-fila" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+                        </svg>
+                        <span class="texto-vazio-fila">Nenhum exame na fila</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+        </main>
+
+        <!-- Rodapé -->
+        {% include 'partials/rodape.html' %}
+    </div>
+
+    <script src="{{ url_for('static', filename='js/aplicativo.js') }}"></script>
+</body>
+</html>

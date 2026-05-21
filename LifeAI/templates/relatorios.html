@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatórios - LifeAI</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&family=SF+Pro+Text:wght@400;500;600&family=SF+Pro+Rounded:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- CSS Principal -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo-paginas.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo-utilitarios.css') }}">
+</head>
+<body class="pagina-aplicacao">
+    <!-- Barra Lateral -->
+    {% include 'partials/barra_lateral.html' %}
+
+    <div class="area-conteudo">
+        <!-- Barra Superior -->
+        {% include 'partials/barra_superior.html' %}
+
+        <!-- Conteúdo Principal -->
+        <main class="conteudo-principal">
+            <!-- Título da Página -->
+            <section class="secao-titulo">
+                <h1 class="titulo-pagina">Relatórios</h1>
+                <p class="descricao-pagina">Dashboard analítico completo da triagem inteligente</p>
+            </section>
+
+            <!-- Controles de Período -->
+            <section class="secao-controles-relatorio">
+                <div class="grupo-filtros-relatorio">
+                    <select id="filtroPeriodo" class="campo-select-filtro">
+                        <option value="hoje">Hoje</option>
+                        <option value="semana">Esta Semana</option>
+                        <option value="mes" selected>Este Mês</option>
+                        <option value="trimestre">Este Trimestre</option>
+                        <option value="ano">Este Ano</option>
+                    </select>
+
+                    <select id="filtroHospitalRelatorio" class="campo-select-filtro">
+                        <option value="">Todos os Hospitais</option>
+                        <option value="hospital-a">Hospital A</option>
+                        <option value="hospital-b">Hospital B</option>
+                        <option value="hospital-c">Hospital C</option>
+                    </select>
+
+                    <div class="botoes-exportacao">
+                        <button class="botao botao-terciario botao-pequeno" id="btnExportarExcel">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Excel
+                        </button>
+                        <button class="botao botao-terciario botao-pequeno" id="btnExportarRelatorioPDF">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            PDF
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Cards de Estatísticas -->
+            <section class="secao-stats-relatorio">
+                <div class="grade-stats-relatorio">
+                    <div class="card-stat-relatorio">
+                        <div class="titulo-card-stat">Total de Exames</div>
+                        <div class="numero-card-stat">{{ total_exames }}</div>
+                        <div class="comparacao-stat">↑ 15% vs mês anterior</div>
+                    </div>
+
+                    <div class="card-stat-relatorio">
+                        <div class="titulo-card-stat">Total de Pacientes</div>
+                        <div class="numero-card-stat">{{ total_pacientes }}</div>
+                        <div class="comparacao-stat">↑ 8% vs mês anterior</div>
+                    </div>
+
+                    <div class="card-stat-relatorio">
+                        <div class="titulo-card-stat">Casos Graves</div>
+                        <div class="numero-card-stat">{{ casos_graves }}</div>
+                        <div class="comparacao-stat">↓ 3% vs mês anterior</div>
+                    </div>
+
+                    <div class="card-stat-relatorio">
+                        <div class="titulo-card-stat">Tempo Médio de Atendimento</div>
+                        <div class="numero-card-stat">{{ tempo_medio_atendimento }}</div>
+                        <div class="comparacao-stat">↑ 5 min vs mês anterior</div>
+                    </div>
+
+                    <div class="card-stat-relatorio">
+                        <div class="titulo-card-stat">Eficiência da IA</div>
+                        <div class="numero-card-stat">{{ eficiencia_ia }}</div>
+                        <div class="comparacao-stat">↑ 2% vs mês anterior</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Gráficos -->
+            <section class="secao-graficos-relatorio">
+                <div class="grade-graficos-relatorio">
+                    <!-- Gráfico Exames Completados -->
+                    <div class="container-grafico-relatorio">
+                        <h3 class="titulo-grafico-relatorio">Exames Completados (Últimos 30 dias)</h3>
+                        <div class="corpo-grafico-relatorio">
+                            <canvas id="canvasExamesCompletados"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico Classificação -->
+                    <div class="container-grafico-relatorio">
+                        <h3 class="titulo-grafico-relatorio">Distribuição de Classificação</h3>
+                        <div class="corpo-grafico-relatorio corpo-grafico-circular">
+                            <canvas id="canvasClassificacao"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico Prioridade -->
+                    <div class="container-grafico-relatorio">
+                        <h3 class="titulo-grafico-relatorio">Exames por Prioridade</h3>
+                        <div class="corpo-grafico-relatorio">
+                            <canvas id="canvasPrioridade"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico Tempo de Atendimento -->
+                    <div class="container-grafico-relatorio">
+                        <h3 class="titulo-grafico-relatorio">Tempo Médio de Atendimento</h3>
+                        <div class="corpo-grafico-relatorio">
+                            <canvas id="canvasTempoAtendimento"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Comparativos Mensais -->
+            <section class="secao-comparativos">
+                <h3 class="titulo-secao-comparativos">Comparativos Mensais</h3>
+                <div class="container-comparativos">
+                    <table class="tabela-comparativos">
+                        <thead class="cabeca-tabela-comparativos">
+                            <tr>
+                                <th>Mês</th>
+                                <th>Exames</th>
+                                <th>Pacientes</th>
+                                <th>Críticos</th>
+                                <th>Urgentes</th>
+                                <th>Tempo Médio</th>
+                                <th>Eficiência IA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Janeiro</td>
+                                <td>245</td>
+                                <td>189</td>
+                                <td>12</td>
+                                <td>34</td>
+                                <td>14 min</td>
+                                <td>92.5%</td>
+                            </tr>
+                            <tr>
+                                <td>Fevereiro</td>
+                                <td>267</td>
+                                <td>204</td>
+                                <td>15</td>
+                                <td>38</td>
+                                <td>13 min</td>
+                                <td>93.2%</td>
+                            </tr>
+                            <tr class="linha-destaque">
+                                <td><strong>Março</strong></td>
+                                <td><strong>289</strong></td>
+                                <td><strong>218</strong></td>
+                                <td><strong>10</strong></td>
+                                <td><strong>35</strong></td>
+                                <td><strong>12 min</strong></td>
+                                <td><strong>94.5%</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Insights -->
+            <section class="secao-insights">
+                <h3 class="titulo-secao-insights">Insights Principais</h3>
+                <div class="grade-insights">
+                    <div class="card-insight">
+                        <div class="icone-insight icone-positivo">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div class="info-insight">
+                            <h4 class="titulo-insight">Melhoria na Eficiência</h4>
+                            <p class="descricao-insight">A IA alcançou 94.5% de precisão, melhorando em 2% comparado ao mês anterior.</p>
+                        </div>
+                    </div>
+
+                    <div class="card-insight">
+                        <div class="icone-insight icone-atencao">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="info-insight">
+                            <h4 class="titulo-insight">Redução de Casos Críticos</h4>
+                            <p class="descricao-insight">Casos críticos reduziram em 33%, indicando melhor detecção precoce.</p>
+                        </div>
+                    </div>
+
+                    <div class="card-insight">
+                        <div class="icone-insight icone-positivo">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                        <div class="info-insight">
+                            <h4 class="titulo-insight">Tempo de Atendimento</h4>
+                            <p class="descricao-insight">Redução de 2 minutos no tempo médio de atendimento com fila otimizada.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Rodapé -->
+        {% include 'partials/rodape.html' %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/aplicativo.js') }}"></script>
+</body>
+</html>

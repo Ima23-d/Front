@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes do Exame - LifeAI</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&family=SF+Pro+Text:wght@400;500;600&family=SF+Pro+Rounded:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- CSS Principal -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo-paginas.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo-utilitarios.css') }}">
+</head>
+<body class="pagina-aplicacao">
+    <!-- Barra Lateral -->
+    {% include 'partials/barra_lateral.html' %}
+
+    <div class="area-conteudo">
+        <!-- Barra Superior -->
+        {% include 'partials/barra_superior.html' %}
+
+        <!-- Conteúdo Principal -->
+        <main class="conteudo-principal">
+            <!-- Barra de Navegação -->
+            <section class="secao-navegacao-voltar">
+                <a href="{{ url_for('lista_exames') }}" class="link-voltar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    Voltar para Exames
+                </a>
+            </section>
+
+            <!-- Cabeçalho com Info do Paciente -->
+            <section class="secao-cabecalho-detalhes">
+                <div class="wrapper-cabecalho-detalhes">
+                    <div class="info-paciente-detalhes">
+                        <h1 class="nome-paciente-detalhes">{{ exame.nome_paciente }}</h1>
+                        <div class="dados-paciente-detalhes">
+                            <span class="item-dado">CPF: {{ exame.cpf }}</span>
+                            <span class="item-dado">Hospital: {{ exame.hospital }}</span>
+                            <span class="item-dado">Data: {{ exame.data_registro }}</span>
+                        </div>
+                    </div>
+                    <div class="badges-detalhes">
+                        <div class="badge-prioridade {% if exame.resultado.prioridade == 'CRÍTICO' %}badge-critica{% elif exame.resultado.prioridade == 'URGENTE' %}badge-urgente{% elif exame.resultado.prioridade == 'ATENÇÃO' %}badge-atencao{% else %}badge-normal{% endif %}">
+                            {{ exame.resultado.prioridade }}
+                        </div>
+                        <span class="badge-status badge-concluido">Concluído</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Conteúdo em Grade -->
+            <div class="grade-detalhes-exame">
+                <!-- Coluna Esquerda - Imagem -->
+                <div class="coluna-imagem-detalhes">
+                    <div class="card-imagem-detalhes">
+                        <div class="container-imagem-exame">
+                            <svg class="placeholder-imagem-exame" viewBox="0 0 400 400" fill="none" stroke="currentColor">
+                                <rect x="10" y="10" width="380" height="380" rx="8"/>
+                                <circle cx="200" cy="100" r="40"/>
+                                <path d="M200 150 L200 300 M150 250 L250 250"/>
+                                <text x="200" y="370" text-anchor="middle" font-size="14">Radiografia Tórax</text>
+                            </svg>
+                        </div>
+                        <div class="acoes-imagem">
+                            <button type="button" class="botao botao-terciario botao-pequeno" title="Zoom">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                            </button>
+                            <button type="button" class="botao botao-terciario botao-pequeno" title="Compartilhar">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                </svg>
+                            </button>
+                            <button type="button" class="botao botao-terciario botao-pequeno" title="Exportar">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coluna Direita - Informações -->
+                <div class="coluna-info-detalhes">
+                    <!-- Resultado Principal -->
+                    <div class="card-secao-detalhes">
+                        <h2 class="titulo-secao-detalhes">Resultado da IA</h2>
+                        
+                        <div class="bloco-resultado-ia">
+                            <div class="item-resultado">
+                                <span class="label-resultado">Diagnóstico Automatizado:</span>
+                                <span class="valor-resultado grande">{{ exame.resultado.gravidade }}</span>
+                            </div>
+                            
+                            <div class="item-resultado">
+                                <span class="label-resultado">Probabilidade:</span>
+                                <div class="indicador-percentual">
+                                    <div class="barra-percentual-detalhes">
+                                        <div class="preenchimento-percentual-detalhes" style="width: {{ exame.resultado.percentual_risco }}%"></div>
+                                    </div>
+                                    <span class="percentual-grande">{{ exame.resultado.percentual_risco }}%</span>
+                                </div>
+                            </div>
+
+                            <div class="item-resultado">
+                                <span class="label-resultado">Prioridade de Atendimento:</span>
+                                <div class="badge-prioridade-grande {% if exame.resultado.prioridade == 'CRÍTICO' %}badge-critica{% elif exame.resultado.prioridade == 'URGENTE' %}badge-urgente{% elif exame.resultado.prioridade == 'ATENÇÃO' %}badge-atencao{% else %}badge-normal{% endif %}">
+                                    {{ exame.resultado.prioridade }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recomendação Médica -->
+                    <div class="card-secao-detalhes">
+                        <h2 class="titulo-secao-detalhes">Recomendação Médica</h2>
+                        <p class="texto-recomendacao-detalhes">{{ exame.resultado.recomendacao }}</p>
+                        <p class="tempo-atendimento-detalhes">
+                            <strong>Tempo estimado de atendimento:</strong> {{ exame.resultado.tempo_estimado }}
+                        </p>
+                    </div>
+
+                    <!-- Observações -->
+                    <div class="card-secao-detalhes">
+                        <h2 class="titulo-secao-detalhes">Observações Médicas</h2>
+                        <p class="texto-observacoes">{{ exame.observacoes or 'Nenhuma observação adicional.' }}</p>
+                    </div>
+
+                    <!-- Dados do Paciente -->
+                    <div class="card-secao-detalhes">
+                        <h2 class="titulo-secao-detalhes">Dados do Paciente</h2>
+                        <div class="grid-dados-paciente">
+                            <div class="item-dado-detalhes">
+                                <span class="rotulo">Data de Nascimento</span>
+                                <span class="valor">{{ exame.data_nascimento }}</span>
+                            </div>
+                            <div class="item-dado-detalhes">
+                                <span class="rotulo">Sexo</span>
+                                <span class="valor">{{ exame.sexo|title }}</span>
+                            </div>
+                            <div class="item-dado-detalhes">
+                                <span class="rotulo">CPF</span>
+                                <span class="valor">{{ exame.cpf }}</span>
+                            </div>
+                            <div class="item-dado-detalhes">
+                                <span class="rotulo">Hospital</span>
+                                <span class="valor">{{ exame.hospital }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <div class="grupo-botoes-detalhes">
+                        <button type="button" class="botao botao-primario" id="btnExportarPDF">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                            </svg>
+                            Exportar PDF
+                        </button>
+                        <button type="button" class="botao botao-secundario" id="btnCompartilhar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Compartilhar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Rodapé -->
+        {% include 'partials/rodape.html' %}
+    </div>
+
+    <script src="{{ url_for('static', filename='js/aplicativo.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Página Não Encontrada - LifeAI</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&family=SF+Pro+Text:wght@400;500;600&family=SF+Pro+Rounded:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- CSS Principal -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo-paginas.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo-utilitarios.css') }}">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #254441 0%, #1f6f5a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        .container-erro {
+            text-align: center;
+            color: white;
+            max-width: 600px;
+            padding: 2rem;
+        }
+        
+        .codigo-erro {
+            font-size: 8rem;
+            font-weight: 700;
+            margin: 0;
+            line-height: 1;
+            text-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .titulo-erro {
+            font-size: 2rem;
+            font-weight: 600;
+            margin: 1rem 0;
+        }
+        
+        .descricao-erro {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .botoes-erro {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .botao-erro {
+            padding: 0.875rem 2rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease-in-out;
+            font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        .botao-primario-erro {
+            background-color: #2dc2bd;
+            color: white;
+        }
+        
+        .botao-primario-erro:hover {
+            background-color: #1f6f5a;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .botao-secundario-erro {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .botao-secundario-erro:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .ilustracao-erro {
+            font-size: 6rem;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-erro">
+        <div class="ilustracao-erro">🔍</div>
+        <h1 class="codigo-erro">404</h1>
+        <h2 class="titulo-erro">Página Não Encontrada</h2>
+        <p class="descricao-erro">
+            Desculpe! A página que você está procurando não existe ou foi movida. 
+            Verifique o URL e tente novamente.
+        </p>
+        
+        <div class="botoes-erro">
+            <a href="{{ url_for('painel_controle') }}" class="botao-erro botao-primario-erro">
+                ← Voltar ao Painel
+            </a>
+            <a href="{{ url_for('pagina_login') }}" class="botao-erro botao-secundario-erro">
+                Ir para Login
+            </a>
+        </div>
+    </div>
+</body>
+</html>
