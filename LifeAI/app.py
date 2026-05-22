@@ -1,9 +1,36 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from datetime import datetime
 import json
+import os
+from werkzeug.utils import secure_filename
+import sys
 
+# Carregar configurações
+from config import config
+
+# Adicionar pasta modelo ao path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'modelo'))
+from modelo import analisar_exame
+
+# Inicializar Flask
 app = Flask(__name__)
-app.secret_key = 'sua_chave_secreta_aqui_mudar_em_producao'
+
+# Aplicar configurações
+env = os.environ.get('FLASK_ENV', 'development')
+app.config.from_object(config[env])
+
+# ==========================================
+# CONFIGURAÇÃO DE UPLOAD
+# ==========================================
+
+# Usar valores do config
+UPLOAD_FOLDER = app.config.get('UPLOAD_FOLDER', os.path.join(os.path.dirname(__file__), 'uploads'))
+ALLOWED_EXTENSIONS = app.config.get('ALLOWED_EXTENSIONS', {'png', 'jpg', 'jpeg', 'gif', 'dcm', 'bmp'})
+MAX_CONTENT_LENGTH = app.config.get('MAX_CONTENT_LENGTH', 50 * 1024 * 1024)
+
+# Criar pasta se não existir
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 # ==========================================
 # DADOS DE EXEMPLO (Substituir por banco de dados real)
@@ -11,7 +38,15 @@ app.secret_key = 'sua_chave_secreta_aqui_mudar_em_producao'
 
 usuarios_autenticados = {}
 exames_armazenados = []
-fila_prioridade = []
+lista_fila_prioridade = []
+
+# ==========================================
+# FUNÇÕES AUXILIARES
+# ==========================================
+
+def arquivo_permitido(filename):
+    """Verifica se arquivo é permitido"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # ==========================================
 # ROTAS DE AUTENTICAÇÃO
@@ -100,14 +135,20 @@ def painel_controle():
     if 'usuario_id' not in session:
         return redirect(url_for('pagina_login'))
     
-    # Dados de exemplo
+    # Calcular dados em tempo real
+    urgentes = sum(1 for e in exames_armazenados if e['resultado'].get('prioridade') == 'URGENTE')
+    criticos = sum(1 for e in exames_armazenados if e['resultado'].get('prioridade') == 'CRÍTICO')
+    atencao = sum(1 for e in exames_armazenados if e['resultado'].get('prioridade') == 'ATENÇÃO')
+    normais = sum(1 for e in exames_armazenados if e['resultado'].get('prioridade') == 'NORMAL')
+    
     contexto = {
-        'total_exames': 8,
-        'urgentes': 3,
-        'atenção': 6,
-        'normais': 45,
+        'total_exames': len(exames_armazenados),
+        'urgentes': urgentes,
+        'criticos': criticos,
+        'atenção': atencao,
+        'normais': normais,
         'ia_ativa': 1,
-        'pacientes_fila': 75,
+        'pacientes_fila': len(lista_fila_prioridade),
         'usuario': session.get('nome_usuario'),
         'hospital': session.get('hospital'),
         'crm': session.get('crm'),
@@ -132,14 +173,41 @@ def novo_exame():
         sintomas = request.form.get('sintomas')
         observacoes = request.form.get('observacoes')
         
-        # Simular análise de IA (substituir por API real)
-        resultado_analise = {
-            'gravidade': 'Urgente',
-            'percentual_risco': 78,
-            'prioridade': 'URGENTE',
-            'recomendacao': 'Encaminhamento imediato para pneumologia',
-            'tempo_estimado': '15 minutos'
-        }
+        # Processar arquivo de imagem
+        arquivo_resultado = request.files.get('arquivo_exame')
+        resultado_analise = None
+        
+        if arquivo_resultado and arquivo_permitido(arquivo_resultado.filename):
+            try:
+                # Salvar arquivo
+                filename = secure_filename(arquivo_resultado.filename)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
+                filename = timestamp + filename
+                caminho_arquivo = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                arquivo_resultado.save(caminho_arquivo)
+                
+                # Analisar com IA
+                resultado_analise = analisar_exame(caminho_arquivo)
+                
+                if not resultado_analise.get('sucesso'):
+                    resultado_analise = None
+                    
+            except Exception as e:
+                print(f"Erro ao processar arquivo: {str(e)}")
+                resultado_analise = None
+        
+        # Se análise falhar, usar valores padrão
+        if not resultado_analise or not resultado_analise.get('sucesso'):
+            resultado_analise = {
+                'gravidade': 'Desconhecida',
+                'percentual_risco': 0,
+                'prioridade': 'NORMAL',
+                'recomendacao': 'Erro na análise - contate o administrador',
+                'tempo_estimado': 'Indisponível',
+                'pathologias': [],
+                'total_patologias_detectadas': 0,
+                'sucesso': False
+            }
         
         novo_registro = {
             'id': len(exames_armazenados) + 1,
@@ -155,6 +223,7 @@ def novo_exame():
         }
         
         exames_armazenados.append(novo_registro)
+        lista_fila_prioridade.append(novo_registro)
         
         return render_template('novo_exame.html', 
                              resultado_analise=resultado_analise,
@@ -232,14 +301,22 @@ def pagina_relatorios():
     if 'usuario_id' not in session:
         return redirect(url_for('pagina_login'))
     
+    # Calcular dados reais
+    total_exames = len(exames_armazenados)
+    casos_graves = sum(1 for e in exames_armazenados if e['resultado'].get('prioridade') in ['CRÍTICO', 'URGENTE'])
+    
+    # Calcular eficiência (percentual de análises bem-sucedidas)
+    analises_sucesso = sum(1 for e in exames_armazenados if e['resultado'].get('sucesso', True))
+    eficiencia = (analises_sucesso / total_exames * 100) if total_exames > 0 else 0
+    
     contexto = {
         'usuario': session.get('nome_usuario'),
         'hospital': session.get('hospital'),
-        'total_exames': len(exames_armazenados),
-        'total_pacientes': len(exames_armazenados),
-        'casos_graves': sum(1 for e in exames_armazenados if e['resultado'].get('prioridade') in ['CRÍTICO', 'URGENTE']),
+        'total_exames': total_exames,
+        'total_pacientes': total_exames,
+        'casos_graves': casos_graves,
         'tempo_medio_atendimento': '12 minutos',
-        'eficiencia_ia': '94.5%',
+        'eficiencia_ia': f'{eficiencia:.1f}%',
     }
     
     return render_template('relatorios.html', **contexto)
@@ -283,20 +360,45 @@ def pagina_perfil():
 
 @app.route('/api/analisar-exame', methods=['POST'])
 def api_analisar_exame():
-    """API para análise de exame com IA"""
-    dados = request.json
-    
-    # Simular análise de IA
-    resultado = {
-        'sucesso': True,
-        'gravidade': 'Urgente',
-        'percentual_risco': 78,
-        'prioridade': 'URGENTE',
-        'recomendacao': 'Encaminhamento imediato para pneumologia',
-        'tempo_estimado': '15 minutos'
-    }
-    
-    return jsonify(resultado)
+    """API para análise de exame com IA via upload"""
+    try:
+        if 'arquivo_exame' not in request.files:
+            return jsonify({
+                'sucesso': False,
+                'erro': 'Nenhum arquivo enviado'
+            }), 400
+        
+        arquivo = request.files['arquivo_exame']
+        
+        if arquivo.filename == '':
+            return jsonify({
+                'sucesso': False,
+                'erro': 'Arquivo não selecionado'
+            }), 400
+        
+        if not arquivo_permitido(arquivo.filename):
+            return jsonify({
+                'sucesso': False,
+                'erro': 'Tipo de arquivo não permitido. Use: PNG, JPG, JPEG, GIF, DCM, BMP'
+            }), 400
+        
+        # Salvar arquivo temporário
+        filename = secure_filename(arquivo.filename)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
+        filename = timestamp + filename
+        caminho_arquivo = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        arquivo.save(caminho_arquivo)
+        
+        # Analisar com IA
+        resultado = analisar_exame(caminho_arquivo)
+        
+        return jsonify(resultado)
+        
+    except Exception as e:
+        return jsonify({
+            'sucesso': False,
+            'erro': f'Erro ao processar análise: {str(e)}'
+        }), 500
 
 
 @app.route('/api/dados-dashboard')
