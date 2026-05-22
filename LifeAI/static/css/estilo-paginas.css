@@ -31,6 +31,7 @@
   align-items: center;
   justify-content: center;
   padding: var(--espaco-3xl) var(--espaco-2xl);
+  background-color: #254441;
 }
 
 .wrapper-login,

@@ -203,7 +203,7 @@ function inicializarUploadExame() {
       this.classList.remove('ativa');
       
       const arquivos = e.dataTransfer.files;
-      processarArquivos(arquivos, area, inputArquivo);
+      processarArquivos(arquivos, area);
     });
     
     // Clique para selecionar arquivo
@@ -213,29 +213,12 @@ function inicializarUploadExame() {
     
     // Mudança de arquivo via input
     inputArquivo.addEventListener('change', function() {
-      processarArquivos(this.files, area, inputArquivo);
-    });
-  });
-  
-  // Botão remover imagem
-  const botoesRemover = document.querySelectorAll('.botao-remover-imagem');
-  botoesRemover.forEach(botao => {
-    botao.addEventListener('click', function(e) {
-      e.preventDefault();
-      const preview = this.closest('.preview-imagem');
-      if (preview) {
-        preview.remove();
-        const area = preview.nextElementSibling || preview.previousElementSibling;
-        const inputArquivo = area ? area.querySelector('input[type="file"]') : null;
-        if (inputArquivo) {
-          inputArquivo.value = '';
-        }
-      }
+      processarArquivos(this.files, area);
     });
   });
 }
 
-function processarArquivos(arquivos, area, inputArquivo) {
+function processarArquivos(arquivos, area) {
   if (arquivos.length === 0) {
     return;
   }
@@ -243,15 +226,14 @@ function processarArquivos(arquivos, area, inputArquivo) {
   const arquivo = arquivos[0];
   
   // Validar tipo de arquivo
-  const tiposPermitidos = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/x-dcm'];
-  if (!tiposPermitidos.includes(arquivo.type) && !arquivo.name.endsWith('.dcm')) {
-    mostrarNotificacao('Tipo de arquivo não permitido. Use JPEG, PNG, GIF, WebP ou DICOM.', 'erro');
+  if (!CONFIG.TIPOS_ARQUIVO_PERMITIDOS.includes(arquivo.type)) {
+    mostrarNotificacao('Tipo de arquivo não permitido. Use JPEG, PNG, GIF ou WebP.', 'erro');
     return;
   }
   
   // Validar tamanho do arquivo
   if (arquivo.size > CONFIG.TAMANHO_MAXIMO_ARQUIVO) {
-    mostrarNotificacao('Arquivo muito grande. Tamanho máximo é 50MB.', 'erro');
+    mostrarNotificacao('Arquivo muito grande. Tamanho máximo é 10MB.', 'erro');
     return;
   }
   
@@ -262,11 +244,6 @@ function processarArquivos(arquivos, area, inputArquivo) {
     const imagem = e.target.result;
     exibirPreviewImagem(imagem, area);
     mostrarNotificacao('Imagem carregada com sucesso!', 'sucesso');
-    
-    // Atualizar input hidden do formulário
-    if (inputArquivo) {
-      // O arquivo já está no input, então temos tudo pronto
-    }
   };
   
   leitor.onerror = function() {
@@ -277,37 +254,33 @@ function processarArquivos(arquivos, area, inputArquivo) {
 }
 
 function exibirPreviewImagem(imagem, area) {
-  // Procurar preview existente
-  let preview = area.previousElementSibling;
-  if (!preview || !preview.classList.contains('preview-imagem')) {
-    // Se não existir, criar novo
-    preview = document.createElement('div');
-    preview.className = 'preview-imagem';
-    area.parentElement.insertBefore(preview, area);
+  // Remover preview anterior se existir
+  const previewAnterior = area.querySelector('.preview-imagem');
+  if (previewAnterior) {
+    previewAnterior.remove();
   }
   
-  preview.style.display = 'block';
+  // Criar novo preview
+  const preview = document.createElement('div');
+  preview.className = 'preview-imagem';
   preview.innerHTML = `
-    <img src="${imagem}" alt="Preview do exame" style="max-width: 100%; max-height: 400px; border-radius: 8px;">
-    <button type="button" class="botao-remover-imagem" title="Remover imagem" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+    <img src="${imagem}" alt="Preview do exame">
+    <button type="button" class="botao-remover-imagem" title="Remover imagem">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="18" y1="6" x2="6" y2="18"></line>
         <line x1="6" y1="6" x2="18" y2="18"></line>
       </svg>
     </button>
   `;
   
-  preview.style.position = 'relative';
-  preview.style.display = 'flex';
-  preview.style.justifyContent = 'center';
-  preview.style.alignItems = 'center';
-  preview.style.marginBottom = '16px';
+  // Inserir preview antes da área de upload (no mesmo contêiner)
+  area.parentElement.insertBefore(preview, area);
   
   // Adicionar evento para remover
   const botaoRemover = preview.querySelector('.botao-remover-imagem');
   botaoRemover.addEventListener('click', function(e) {
     e.preventDefault();
-    preview.style.display = 'none';
+    preview.remove();
     const inputArquivo = area.querySelector('input[type="file"]');
     if (inputArquivo) {
       inputArquivo.value = '';
@@ -572,91 +545,87 @@ function obterCorNotificacao(tipo) {
 // ===============================================
 
 function inicializarAnaliseExame() {
-  const formulario = document.querySelector('#formularioNovoExame');
-  const botaoAnalisar = document.querySelector('#btnAnalisarIA');
-  const botaoCancelar = document.querySelector('#btnCancelar');
+  const botoesAnalisar = document.querySelectorAll('[data-analisar-exame]');
   
-  if (botaoAnalisar && formulario) {
-    botaoAnalisar.addEventListener('click', async function(e) {
+  botoesAnalisar.forEach(botao => {
+    botao.addEventListener('click', async function(e) {
       e.preventDefault();
       
-      // Validar campos obrigatórios
-      const camposRequeridos = formulario.querySelectorAll('[required]');
-      let valido = true;
-      for (let campo of camposRequeridos) {
-        if (!campo.value.trim()) {
-          validarCampo(campo);
-          valido = false;
-        }
-      }
-      
-      if (!valido) {
+      const formulario = this.closest('form');
+      if (!validarFormulario(formulario)) {
         mostrarNotificacao('Por favor, preencha todos os campos obrigatórios.', 'aviso');
         return;
       }
       
-      // Validar se tem arquivo
-      const inputArquivo = formulario.querySelector('#arquivo_exame');
-      if (!inputArquivo || !inputArquivo.files || inputArquivo.files.length === 0) {
-        mostrarNotificacao('Por favor, selecione uma imagem para análise.', 'aviso');
-        return;
-      }
-      
-      await enviarParaAnalise(formulario, this);
+      await simularAnaliseIA(this);
     });
-  }
-  
-  if (botaoCancelar) {
-    botaoCancelar.addEventListener('click', function(e) {
-      e.preventDefault();
-      if (formulario) {
-        formulario.reset();
-        const previews = formulario.querySelectorAll('.preview-imagem');
-        previews.forEach(p => p.style.display = 'none');
-        const resultado = document.querySelector('.coluna-resultado');
-        if (resultado) resultado.remove();
-      }
-      mostrarNotificacao('Formulário cancelado.', 'info');
-    });
-  }
+  });
 }
 
-async function enviarParaAnalise(formulario, botao) {
-  const textoOriginal = botao.textContent;
+async function simularAnaliseIA(botao) {
+  // Desabilitar botão
   botao.disabled = true;
-  botao.textContent = 'Analisando com IA...';
+  const textoOriginal = botao.textContent;
+  botao.textContent = 'Analisando...';
   
   try {
-    // Preparar FormData
-    const formData = new FormData(formulario);
+    // Simular processamento de 2-4 segundos
+    const tempoProcessamento = Math.random() * 2000 + 2000;
+    await aguardar(tempoProcessamento);
     
-    // Mostrar notificação de processamento
-    mostrarNotificacao('Processando imagem com IA... Isso pode levar alguns segundos.', 'info');
+    // Gerar resultado aleatório
+    const resultado = gerarResultadoAnalise();
     
-    // Enviar para o backend
-    const resposta = await fetch('/novo-exame', {
-      method: 'POST',
-      body: formData
-    });
-    
-    if (!resposta.ok) {
-      throw new Error('Erro ao enviar análise');
-    }
-    
-    // Pegar HTML da resposta
-    const html = await resposta.text();
-    
-    // Recarregar a página para mostrar resultado
-    setTimeout(() => {
-      window.location.reload();
-    }, 500);
+    // Exibir resultado
+    exibirResultadoAnalise(resultado);
+    mostrarNotificacao('Análise concluída com sucesso!', 'sucesso');
     
   } catch (erro) {
-    mostrarNotificacao('Erro ao processar análise. Tente novamente.', 'erro');
-    console.error('Erro:', erro);
+    mostrarNotificacao('Erro ao analisar exame. Tente novamente.', 'erro');
+    console.error(erro);
+  } finally {
     botao.disabled = false;
     botao.textContent = textoOriginal;
   }
+}
+
+function aguardar(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function gerarResultadoAnalise() {
+  const prioridades = [
+    { nivel: 'CRITICO', cor: '#ad2e24', risco: Math.random() * 30 + 70, gravidade: 'Crítica' },
+    { nivel: 'URGENTE', cor: '#ff7a00', risco: Math.random() * 30 + 50, gravidade: 'Urgente' },
+    { nivel: 'ATENCAO', cor: '#f0cf65', risco: Math.random() * 25 + 25, gravidade: 'Atenção' },
+    { nivel: 'NORMAL', cor: '#1f6f5a', risco: Math.random() * 20 + 5, gravidade: 'Normal' }
+  ];
+  
+  const prioridade = prioridades[Math.floor(Math.random() * prioridades.length)];
+  
+  const recomendacoes = [
+    'Consulta imediata com radiologista',
+    'Avaliação em 24 horas',
+    'Acompanhamento rotineiro',
+    'Nova avaliação em 3 meses'
+  ];
+  
+  const temposEstimados = [
+    '15-30 minutos',
+    '30-60 minutos',
+    '1-2 horas',
+    'Agendado'
+  ];
+  
+  return {
+    gravidade: prioridade.gravidade,
+    risco: Math.round(prioridade.risco),
+    prioridade: prioridade.nivel,
+    cor: prioridade.cor,
+    recomendacao: recomendacoes[Math.floor(Math.random() * recomendacoes.length)],
+    tempo: temposEstimados[Math.floor(Math.random() * temposEstimados.length)],
+    confianca: Math.round(Math.random() * 10 + 90)
+  };
 }
 
 function exibirResultadoAnalise(resultado) {
