@@ -214,6 +214,32 @@
                 </table>
             </div>
 
+            <!-- PAGINAÇÃO -->
+          <!-- PAGINAÇÃO -->
+                <div class="ex-paginacao" style="margin-top: 0; border-radius: 0 0 14px 14px; border: 1px solid #f0f0f0; border-top: 1px solid #f0f0f0; box-shadow: 0 1px 4px rgba(0,0,0,.06);">
+                    <span class="ex-pag-info" style="font-size: 0.85rem;">Mostrando <strong style="color:#6b7280; font-weight:500;">1 a 8 de 60</strong> exames</span>
+
+                    <div class="ex-pag-controles">
+                        <button class="ex-pag-btn" disabled><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg></button>
+                        <button class="ex-pag-btn ex-pag-btn-ativo" style="background:#fff; color:#1f2937; border-color:#e5e7eb;">1</button>
+                        <button class="ex-pag-btn">2</button>
+                        <button class="ex-pag-btn">3</button>
+                        <button class="ex-pag-btn">4</button>
+                        <button class="ex-pag-btn">5</button>
+                        <span class="ex-pag-ellipsis">...</span>
+                        <button class="ex-pag-btn">8</button>
+                        <button class="ex-pag-btn"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg></button>
+                    </div>
+
+                    <div class="ex-pag-porpagina">
+                        <select class="ex-pag-select" style="padding: 0.4rem 2rem 0.4rem 0.8rem; font-size: 0.85rem; color: #6b7280; font-weight: 500; background-color: #fff;">
+                            <option value="8" selected>8 por página</option>
+                            <option value="16">16 por página</option>
+                            <option value="24">24 por página</option>
+                        </select>
+                    </div>
+                </div>
+
         </main>
 
         {% include 'partials/rodape.html' %}
@@ -221,13 +247,134 @@
 
     <script src="{{ url_for('static', filename='js/aplicativo.js') }}"></script>
     <script>
-        // Busca em tempo real
-        document.getElementById('buscarExame').addEventListener('input', function () {
-            const termo = this.value.toLowerCase();
-            document.querySelectorAll('#corpoTabela tr.ex-row').forEach(function (linha) {
-                linha.style.display = linha.textContent.toLowerCase().includes(termo) ? '' : 'none';
+    (function () {
+        /* ── Estado ───────────────────────────────────────────── */
+        let paginaAtual = 1;
+        let itensPorPagina = 10;
+        let linhasVisiveis = []; // linhas que passam no filtro de busca
+
+        const todasLinhas = Array.from(document.querySelectorAll('#corpoTabela tr.ex-row'));
+
+        /* ── Elementos UI ─────────────────────────────────────── */
+        const elDe       = document.getElementById('exPagDe');
+        const elAte      = document.getElementById('exPagAte');
+        const elTotal    = document.getElementById('exPagTotal');
+        const elControles= document.getElementById('exPagControles');
+        const elQtd      = document.getElementById('exPagQtd');
+        const elBusca    = document.getElementById('buscarExame');
+
+        /* ── Funções principais ───────────────────────────────── */
+        function filtrar() {
+            const termo = elBusca.value.toLowerCase().trim();
+            linhasVisiveis = todasLinhas.filter(function (linha) {
+                return linha.textContent.toLowerCase().includes(termo);
             });
+            paginaAtual = 1;
+            renderizar();
+        }
+
+        function renderizar() {
+            const total      = linhasVisiveis.length;
+            const totalPags  = Math.max(1, Math.ceil(total / itensPorPagina));
+            paginaAtual      = Math.min(paginaAtual, totalPags);
+            const inicio     = (paginaAtual - 1) * itensPorPagina;
+            const fim        = Math.min(inicio + itensPorPagina, total);
+
+            // Mostrar/esconder linhas
+            todasLinhas.forEach(function (linha) { linha.style.display = 'none'; });
+            linhasVisiveis.forEach(function (linha, idx) {
+                linha.style.display = (idx >= inicio && idx < fim) ? '' : 'none';
+            });
+
+            // Atualizar info
+            elTotal.textContent = total;
+            elDe.textContent    = total === 0 ? 0 : inicio + 1;
+            elAte.textContent   = fim;
+
+            // Renderizar botões de página
+            renderizarBotoes(totalPags);
+        }
+
+        function renderizarBotoes(totalPags) {
+            elControles.innerHTML = '';
+
+            // Botão anterior
+            var btnPrev = criarBtn(null, paginaAtual <= 1);
+            btnPrev.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>';
+            btnPrev.setAttribute('aria-label', 'Página anterior');
+            btnPrev.addEventListener('click', function () { irPara(paginaAtual - 1); });
+            elControles.appendChild(btnPrev);
+
+            // Lógica de páginas com reticências
+            var paginas = calcularPaginas(paginaAtual, totalPags);
+            paginas.forEach(function (p) {
+                if (p === '...') {
+                    var span = document.createElement('span');
+                    span.className = 'ex-pag-ellipsis';
+                    span.textContent = '...';
+                    elControles.appendChild(span);
+                } else {
+                    var btn = criarBtn(p, false);
+                    btn.textContent = p;
+                    if (p === paginaAtual) btn.classList.add('ex-pag-btn-ativo');
+                    btn.addEventListener('click', (function (pg) {
+                        return function () { irPara(pg); };
+                    })(p));
+                    elControles.appendChild(btn);
+                }
+            });
+
+            // Botão próximo
+            var btnNext = criarBtn(null, paginaAtual >= totalPags);
+            btnNext.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>';
+            btnNext.setAttribute('aria-label', 'Próxima página');
+            btnNext.addEventListener('click', function () { irPara(paginaAtual + 1); });
+            elControles.appendChild(btnNext);
+        }
+
+        function calcularPaginas(atual, total) {
+            if (total <= 7) {
+                return Array.from({ length: total }, function (_, i) { return i + 1; });
+            }
+            var paginas = [];
+            if (atual <= 4) {
+                paginas = [1, 2, 3, 4, 5, '...', total];
+            } else if (atual >= total - 3) {
+                paginas = [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+            } else {
+                paginas = [1, '...', atual - 1, atual, atual + 1, '...', total];
+            }
+            return paginas;
+        }
+
+        function criarBtn(pagina, desabilitado) {
+            var btn = document.createElement('button');
+            btn.className = 'ex-pag-btn';
+            btn.disabled  = desabilitado;
+            return btn;
+        }
+
+        function irPara(pagina) {
+            var totalPags = Math.max(1, Math.ceil(linhasVisiveis.length / itensPorPagina));
+            if (pagina < 1 || pagina > totalPags) return;
+            paginaAtual = pagina;
+            renderizar();
+            // Scroll suave ao topo da tabela
+            var tabela = document.querySelector('.ex-table-wrap');
+            if (tabela) tabela.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        /* ── Eventos ──────────────────────────────────────────── */
+        elBusca.addEventListener('input', filtrar);
+        elQtd.addEventListener('change', function () {
+            itensPorPagina = parseInt(this.value, 10);
+            paginaAtual = 1;
+            renderizar();
         });
+
+        /* ── Inicialização ────────────────────────────────────── */
+        filtrar(); // popula linhasVisiveis e renderiza
+    })();
     </script>
 </body>
 </html>

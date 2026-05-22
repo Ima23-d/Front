@@ -22,15 +22,17 @@
         <!-- Conteúdo Principal -->
         <main class="conteudo-principal">
             <!-- Título da Página -->
-            <section class="secao-titulo">
-                <h1 class="titulo-pagina">Novo Exame</h1>
-                <p class="descricao-pagina">Envie uma imagem radiológica para análise com IA</p>
-            </section>
+               <!-- Título -->
+            <div class="ex-titulo">
+                <h1 class="ex-h1">Novo Exame</h1>
+                <p class="ex-sub">Envie uma imagem radiológica para análise com IA</p>
+            </div>
 
-            <div class="container-novo-exame">
+
+            <div class="container-novo-exame" style="max-width: 100%;">
                 <div class="grade-novo-exame{% if resultado_analise %} com-resultado{% endif %}">
                     <!-- Formulário -->
-                    <div class="coluna-formulario">
+                    <div class="coluna-formulario" style="max-width: 100%;">
                         <div class="card-formulario">
                             <form method="POST" action="{{ url_for('novo_exame') }}" enctype="multipart/form-data" class="formulario-novo-exame" id="formularioNovoExame">
                                 <!-- Upload da Imagem -->
